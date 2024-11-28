@@ -2,7 +2,7 @@ setup_shell.sh
 
 # Development files
 propogate_from_main.sh
-./datasets/
+datasets/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
