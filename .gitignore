@@ -1,3 +1,12 @@
+# Ignore Vim swap files
+*.swp
+*.swo
+*.un~
+
+# Ignore Vim backup files
+*~
+
+# Not leak api keys
 setup_shell.sh
 
 # Development files
