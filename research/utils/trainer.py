@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 import torch
+import gym
 
 from research.envs.base import EmptyEnv
 
@@ -69,6 +70,7 @@ class Trainer(object):
         eval_env_fn: Optional[Callable] = None,
         env_runner: Optional[str] = None,
         eval_env_runner: Optional[str] = None,
+        num_eval_envs: int = 1,
         total_steps: int = 1000,
         log_freq: int = 100,
         env_freq: int = 1,
@@ -94,6 +96,7 @@ class Trainer(object):
         self._eval_env = None
         self.eval_env_fn = eval_env_fn
         self.eval_env_runner = eval_env_runner
+        self.num_eval_envs = num_eval_envs
 
         # Logging parameters
         self.total_steps = total_steps
@@ -146,11 +149,12 @@ class Trainer(object):
             env_runner = (
                 vars(runners)[self.eval_env_runner] if isinstance(self.eval_env_runner, str) else self.eval_env_runner
             )
+            eval_env_fn = lambda: gym.vector.AsyncVectorEnv([self.eval_env_fn] * self.num_eval_envs)
             if env_runner is None:
-                self._eval_env = self.eval_env_fn()
+                self._eval_env = eval_env_fn()
             else:
                 self._eval_env = env_runner(
-                    self.eval_env_fn,
+                    eval_env_fn,
                     observation_space=self.model.observation_space,
                     action_space=self.model.action_space,
                 )
