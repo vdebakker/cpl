@@ -1,6 +1,7 @@
 import argparse
 import os
 import subprocess
+from datetime import datetime
 
 from research.utils.config import Config
 
@@ -27,6 +28,9 @@ if __name__ == "__main__":
     parser.add_argument("--path", "-p", type=str, default=None)
     parser.add_argument("--device", "-d", type=str, default="auto")
     args = parser.parse_args()
+
+    if args.path is None:
+        args.path = f'./outputs/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}/'
 
     config = Config.load(args.config)
     print(config)
