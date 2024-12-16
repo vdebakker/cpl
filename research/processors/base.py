@@ -4,6 +4,7 @@ Examples are as follows:
 1. Normalization
 2. Image Augmentations applied on the entire batch at once.
 """
+
 from typing import Any, Dict, List, Optional, Tuple
 
 import gym

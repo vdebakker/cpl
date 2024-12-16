@@ -35,7 +35,6 @@ def _get_space(low=None, high=None, shape=None, dtype=None):
 
 
 class EmptyEnv(gym.Env):
-
     """
     An empty holder for defining supervised learning problems
     It works by specifying the ranges and shapes.

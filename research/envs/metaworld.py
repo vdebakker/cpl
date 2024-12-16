@@ -2,6 +2,7 @@
 Simple wrapper for registering metaworld enviornments
 properly with gym.
 """
+
 import gym
 import numpy as np
 

@@ -41,9 +41,7 @@ class EvalMetricTracker(object):
             self.ep_length[i] += 1
             self.ep_reward[i] += rew
             for k, v in info[i].items():
-                if (
-                    isinstance(v, float) or np.isscalar(v)
-                ) and k not in EXCLUDE_METRICS:
+                if (isinstance(v, float) or np.isscalar(v)) and k not in EXCLUDE_METRICS:
                     self.ep_metrics[i][k].append(v)
 
             if done[i]:
@@ -75,9 +73,7 @@ class EvalMetricTracker(object):
         return metrics
 
 
-def eval_multiple(
-    env, model, path: str, step: int, eval_fns: List[str], eval_kwargs: List[Dict]
-):
+def eval_multiple(env, model, path: str, step: int, eval_fns: List[str], eval_kwargs: List[Dict]):
     all_metrics = dict()
     for eval_fn, eval_kwarg in zip(eval_fns, eval_kwargs):
         metrics = locals()[eval_fn](env, model, path, step, **eval_kwarg)
@@ -111,9 +107,7 @@ def eval_policy(
         ep_length, ep_reward = 0, 0
         frames = []
         save_gif = i < num_gifs
-        render_kwargs = (
-            dict(mode="rgb_array", width=width, height=height) if save_gif else dict()
-        )
+        render_kwargs = dict(mode="rgb_array", width=width, height=height) if save_gif else dict()
         obs = env.reset()
         if history_length > 0:
             obs = utils.unsqueeze(obs, 0)
