@@ -1,3 +1,6 @@
+# Output dir
+outputs/
+
 # Ignore Vim swap files
 *.swp
 *.swo
@@ -5,6 +8,12 @@
 
 # Ignore Vim backup files
 *~
+
+# Gifs
+gifs/
+
+# Wandb
+wandb
 
 # Not leak api keys
 setup_shell.sh
