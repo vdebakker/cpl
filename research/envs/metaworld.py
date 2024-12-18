@@ -25,7 +25,8 @@ class MetaWorldSawyerEnv(gym.Env):
         self._env._set_task_called = True
         self._seed = seed
         if self._seed:
-            self._env.seed(0)  # Seed it at zero for now.
+            np.random.seed(seed)
+            # self._env.seed(self._seed)  # Seed it at zero for now.
         self.randomize_hand = randomize_hand
         self.sparse = sparse
         assert self._env.observation_space.shape[0] == 39
@@ -36,8 +37,10 @@ class MetaWorldSawyerEnv(gym.Env):
 
     def seed(self, seed=None):
         super().seed(seed=seed)
-        if self._seed:
-            self._env.seed(0)
+        self._env.seed(seed)
+        np.random.seed(seed)
+        # if self._seed:
+            # self._env.seed(0)
 
     def step(self, action):
         self._episode_steps += 1

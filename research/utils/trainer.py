@@ -149,7 +149,9 @@ class Trainer(object):
             env_runner = (
                 vars(runners)[self.eval_env_runner] if isinstance(self.eval_env_runner, str) else self.eval_env_runner
             )
-            eval_env_fn = lambda: gym.vector.AsyncVectorEnv([self.eval_env_fn] * self.num_eval_envs)
+            from functools import partial
+            eval_env_fn = lambda: gym.vector.AsyncVectorEnv(
+                [partial(self.eval_env_fn, env_kwargs={'seed': i}) for i in range(self.num_eval_envs)])
             if env_runner is None:
                 self._eval_env = eval_env_fn()
             else:
