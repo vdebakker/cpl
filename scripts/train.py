@@ -13,6 +13,8 @@ def try_wandb_setup(path, config):
             import wandb
         except ImportError:
             return
+        if not config.get('wandb_enabled', True):
+            return
         project_dir = os.path.dirname(os.path.dirname(__file__))
         wandb.init(
             project=os.path.basename(project_dir),
