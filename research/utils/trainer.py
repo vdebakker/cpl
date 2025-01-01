@@ -9,6 +9,8 @@ import numpy as np
 import torch
 import gym
 
+import matplotlib.pyplot as plt
+
 from research.envs.base import EmptyEnv
 
 from . import evaluate, runners
@@ -284,6 +286,17 @@ class Trainer(object):
         start_time = time.time()
         current_time = start_time
 
+        first_batch = next(iter(self.train_dataloader))
+        first_batch = format_batch(first_batch)
+
+
+        first_obs = torch.cat((first_batch["obs_1"], first_batch["obs_2"]), dim=0)
+        first_action = torch.cat((first_batch["action_1"], first_batch["action_2"]), dim=0)
+
+        # plt.ion()
+        # sc = None
+        ref_lp = torch.cat((first_batch['score_1'], first_batch['score_2']), dim=0).numpy()
+
         while step <= self.total_steps:
             for batch in self.train_dataloader:
                 if profile:
@@ -294,6 +307,7 @@ class Trainer(object):
                     for _ in range(env_iters):
                         env_step(self.env, step, self.total_steps, timeit=profile)
 
+
                 # Next, format the batch
                 batch = format_batch(batch, timeit=profile)
 
@@ -303,6 +317,22 @@ class Trainer(object):
                 # Update the schedulers
                 for scheduler in self.model.schedulers.values():
                     scheduler.step()
+
+                if step % 100 == 0:
+                    self.model.network.encoder.eval()
+                    self.model.network.actor.eval()
+                    with torch.no_grad():
+                        _obs = self.model.network.encoder(first_obs)
+                        dist = self.model.network.actor(_obs)
+                        lp = dist.log_prob(first_action).sum(dim=-1).numpy()
+
+                    # if sc is None:
+                    #     print('test')
+                    #     sc = ax.scatter(lp, ref_lp)
+                    #     plt.show()
+                    # else:
+                    #     sc.set_offsets(np.stack((lp, ref_lp), axis=-1))  # Update scatter plot data
+                    #     plt.draw()
 
                 # Now determine if we should dump the logs
                 if step % self.log_freq == 0:
@@ -317,6 +347,10 @@ class Trainer(object):
                     for name, scheduler in self.model.schedulers.items():
                         logger.record("lr/" + name, scheduler.get_last_lr()[0])
                     # Record training metrics
+                    if 'accuracy' in train_metric_lists:
+                        print(np.mean(train_metric_lists['accuracy']), np.mean(train_metric_lists['cpl_loss']), np.mean(train_metric_lists['bc_loss']))
+                    else:
+                        print(f'Train: {np.mean(train_metric_lists["loss"]):.3f}')
                     log_from_dict(logger, env_metric_lists, "env")
                     log_from_dict(logger, train_metric_lists, "train")
                     logger.dump(step=step)
@@ -331,6 +365,7 @@ class Trainer(object):
                     # Run and time validation step
                     current_time = time.time()
                     validation_metrics = self.validate(path, step)
+                    # print(f'Valid: {np.mean(validation_metrics["loss"]):.3f}')
                     logger.record("time/validation", time.time() - current_time)
                     if self.loss_metric in validation_metrics:
                         current_valid_metric = validation_metrics[self.loss_metric]

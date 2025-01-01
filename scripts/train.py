@@ -25,6 +25,8 @@ def try_wandb_setup(path, config):
 
 
 if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots()
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", "-c", type=str, default=None)
     parser.add_argument("--path", "-p", type=str, default=None)
