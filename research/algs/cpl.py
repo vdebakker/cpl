@@ -13,8 +13,10 @@ def biased_bce_with_logits(adv1, adv2, y, bias=1.0):
     # y = 1 if we prefer x2 to x1
     # We need to implement the numerical stability trick.
 
+    # print(adv1.mean())
     logit21 = adv2 - bias * adv1
     logit12 = adv1 - bias * adv2
+    # print((y * logit21 + (1 - y) * logit12).mean())
     max21 = torch.clamp(-logit21, min=0, max=None)
     max12 = torch.clamp(-logit12, min=0, max=None)
     nlp21 = torch.log(torch.exp(-max21) + torch.exp(-logit21 - max21)) + max21
@@ -67,7 +69,7 @@ class CPL(OffPolicyAlgorithm):
         # Perform checks on values
         assert "encoder" in self.network.CONTAINERS
         assert "actor" in self.network.CONTAINERS
-        assert contrastive_bias > 0.0 and contrastive_bias <= 1.0
+        # assert contrastive_bias > 0.0 and contrastive_bias <= 1.0
         self.alpha = alpha
         self.contrastive_bias = contrastive_bias
         self.bc_data = bc_data
@@ -102,19 +104,13 @@ class CPL(OffPolicyAlgorithm):
         dist = self.network.actor(obs)
         if isinstance(dist, torch.distributions.Distribution):
             lp = dist.log_prob(action)
+            # print(lp.std())
+            # print(lp[(action <= -0.9999).any(dim=-1) | (action >= 0.9999).any(dim=-1)])
         else:
             assert dist.shape == action.shape
             # For independent gaussian with unit var, logprob reduces to MSE.
             lp = -torch.square(dist - action).sum(dim=-1)
-
-        # Compute the BC Loss from the log probabilities.
-        # In some cases we might want to only do this on the positive data.
-        if self.bc_data == "pos":
-            lp1, lp2 = torch.chunk(lp, 2, dim=0)  # Should return two (B, S)
-            lp_pos = torch.cat((lp1[batch["label"] <= 0.5], lp2[batch["label"] >= 0.5]), dim=0)
-            bc_loss = (-lp_pos).mean()  # We have a full mask when using feedback data.
-        else:
-            bc_loss = (-lp).mean()
+            # print(lp.std())
 
         # Step 2: Compute the advantages.
         adv = self.alpha * lp
@@ -127,6 +123,31 @@ class CPL(OffPolicyAlgorithm):
             # Otherwise we update directly on the preference data with the standard CE loss
             adv1, adv2 = torch.chunk(segment_adv, 2, dim=0)
             cpl_loss, accuracy = biased_bce_with_logits(adv1, adv2, batch["label"].float(), bias=self.contrastive_bias)
+
+        # Compute the BC Loss from the log probabilities.
+        # In some cases we might want to only do this on the positive data.
+        if self.bc_data == "pos":
+            lp1, lp2 = torch.chunk(lp, 2, dim=0)  # Should return two (B, S)
+            lp_pos = torch.cat((lp1[batch["label"] <= 0.5], lp2[batch["label"] >= 0.5]), dim=0)
+            print('test')
+            bc_loss = ((-lp_pos) * ((adv2 > adv1) == torch.round(batch["label"].float()))).mean()  # We have a full mask when using feedback data.
+        else:
+            acc = (adv2 > adv1) == torch.round(batch["label"].float())
+            acc = torch.cat((acc, acc), dim=0)
+            bc_loss = (-lp * acc[..., None]).mean()  # We have a full mask when using feedback data.
+            # bc_loss = (-lp).mean()
+
+        # # Step 2: Compute the advantages.
+        # adv = self.alpha * lp
+        # segment_adv = adv.sum(dim=-1)
+
+        # # Step 3: Compute the Loss.
+        # if "score" in batch:
+        #     cpl_loss, accuracy = biased_bce_with_scores(segment_adv, batch["score"].float(), bias=self.contrastive_bias)
+        # else:
+        #     # Otherwise we update directly on the preference data with the standard CE loss
+        #     adv1, adv2 = torch.chunk(segment_adv, 2, dim=0)
+        #     cpl_loss, accuracy = biased_bce_with_logits(adv1, adv2, batch["label"].float(), bias=self.contrastive_bias)
         return cpl_loss, bc_loss, accuracy
 
     def train_step(self, batch: Dict, step: int, total_steps: int) -> Dict:
