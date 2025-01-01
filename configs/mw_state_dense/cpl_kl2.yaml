@@ -1,11 +1,11 @@
 
-alg: CPL
+alg: CPL_KL
 alg_kwargs:
-  alpha: 0.03
-  bc_coeff: 0.1 #2
+  alpha: 0.1
+  bc_coeff: 1
   bc_data: all
   contrastive_bias: 1.0 #0.5
-  bc_steps: 0
+  bc_steps: 1
 
 optim: Adam
 optim_kwargs:
@@ -13,23 +13,14 @@ optim_kwargs:
 
 network: ActorPolicy
 network_kwargs:
-  actor_class: DiagonalGaussianMLPActor
+  actor_class: ContinuousMLPActor
   actor_kwargs:
     dropout: 0.25 # only actor gets dropout sometimes.
-    log_std_bounds: [-5, 2]
-    squash_normal: True
+    output_act: ["import", "torch.nn", "Tanh"]
     hidden_layers: [64, 64]
-    output_act: null
     ortho_init: True
-  # actor_class: ContinuousMLPActor
-  # actor_kwargs:
-  #   dropout: 0.25 # only actor gets dropout sometimes.
-  #   output_act: ["import", "torch.nn", "Tanh"]
-  #   hidden_layers: [64, 64]
-  #   ortho_init: True
 
-checkpoint: outputs/2024-12-20_10-38-47/best_model.pt
-# checkpoint: outputs/2024-12-18_17-18-50/best_model.pt
+checkpoint: outputs/2024-12-18_17-18-50/best_model.pt
 
 eval_env: mw_reach-v2
 

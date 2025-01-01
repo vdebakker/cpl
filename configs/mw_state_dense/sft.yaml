@@ -1,7 +1,7 @@
 
 alg: BehaviorCloning
 alg_kwargs:
-  bc_all_steps: 200000
+  bc_all_steps: 10000
   bc_data: pos
 
 optim: Adam
@@ -10,20 +10,37 @@ optim_kwargs:
 
 network: ActorPolicy
 network_kwargs:
-  actor_class: ContinuousMLPActor
+  actor_class: DiagonalGaussianMLPActor
   actor_kwargs:
     dropout: 0.25 # only actor gets dropout sometimes.
-    output_act: ["import", "torch.nn", "Tanh"]
-    hidden_layers: [512, 512]
+    log_std_bounds: [-5, 2]
+    squash_normal: True
+    hidden_layers: [64, 64]
+    output_act: null
     ortho_init: True
+  # actor_class: ContinuousMLPActor
+  # actor_kwargs:
+    # dropout: 0.25 # only actor gets dropout sometimes.
+    # output_act: ["import", "torch.nn", "Tanh"]
+    # hidden_layers: [64, 64]
+    # ortho_init: True
 
 checkpoint: null
 
-eval_env: mw_drawer-open-v2
+eval_env: mw_reach-v2
 
 dataset: FeedbackBuffer
 dataset_kwargs:
-  path: datasets/mw/pref/mw_drawer-open-v2_ep2500_n0.3.npz
+  path: datasets/mw/pref/mw_reach-v2_3_ep2500_n0.3.npz
+  batch_size: 96
+  segment_length: null # default to 64
+  capacity: 2500 # How many segments in the dataset
+  label_key: rl_sum
+  mode: rank
+
+validation_dataset: FeedbackBuffer
+validation_dataset_kwargs:
+  path: datasets/mw/pref/mw_reach-v2_ep100_n0.3_valid.npz
   batch_size: 96
   segment_length: null # default to 64
   capacity: 2500 # How many segments in the dataset
@@ -36,13 +53,16 @@ trainer_kwargs: # Arguments given to Algorithm.train
   total_steps: 500000 # The total number of steps to train
   log_freq: 500 # How often to log values
   profile_freq: 500
-  eval_freq: 5000 # How often to run evals
+  eval_freq: 500 # How often to run evals
   eval_fn: eval_policy
+  num_eval_envs: 50
   eval_kwargs:
-    num_ep: 25 # Number of enviornment episodes to run for evaluation, or -1 if none should be run.
+    num_ep: 100 # Number of enviornment episodes to run for evaluation, or -1 if none should be run.
   loss_metric: reward # The validation metric that determines when to save the "best_checkpoint"
   train_dataloader_kwargs:
     num_workers: 0 # Number of dataloader workers.
     batch_size: null
 
 seed: null
+
+wandb_enabled: False

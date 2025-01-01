@@ -6,7 +6,7 @@ alg_kwargs:
 
 optim: Adam
 optim_kwargs:
-  lr: 0.001
+  lr: 0.01
 
 network: ActorPolicy
 network_kwargs:
@@ -16,6 +16,8 @@ network_kwargs:
     hidden_layers: [64, 64]
     ortho_init: True
     dropout: 0.25 # only actor gets dropout sometimes.
+
+    chunk_sz: 1  # Action chunking
 
     # Diffusion parameters
     diffusion_train_steps: 32
@@ -31,8 +33,8 @@ eval_env: mw_reach-v2
 dataset: FeedbackBuffer
 dataset_kwargs:
   path: datasets/mw/pref/mw_reach-v2_ep2500_n0.3.npz
-  batch_size: 96
-  segment_length: null # default to 64
+  batch_size:  4096 #96
+  segment_length: 1 # default to 64
   capacity: 2500 # How many segments in the dataset
   label_key: rl_sum
   mode: rank
@@ -54,3 +56,5 @@ trainer_kwargs: # Arguments given to Algorithm.train
     batch_size: null
 
 seed: null
+
+wandb_enabled: False

@@ -5,7 +5,7 @@ alg_kwargs:
   critic_freq: 1
   actor_freq: 1
   target_freq: 2
-  random_steps: 25000
+  random_steps: 10000
   bc_steps: 0
 
 optim: Adam
@@ -22,10 +22,10 @@ network_kwargs:
   critic_class: ContinuousMLPCritic
   critic_kwargs:
     ensemble_size: 2
-  hidden_layers: [256, 256, 256]
+  hidden_layers: [128, 128]
   ortho_init: true
 
-env: mw_drawer-open-v2
+env: mw_reach-v2
 env_kwargs:
   sparse: False
 
@@ -49,11 +49,14 @@ trainer_kwargs: # Arguments given to Algorithm.train
   log_freq: 250 # How often to log values
   profile_freq: 100
   env_runner: AsyncEnv # Set to AsyncEnv to run the environment run asynchronized!
-  eval_freq: 10000 # How often to run evals
+  eval_freq: 500 # How often to run evals
   checkpoint_freq: 10000
   eval_fn: eval_policy
   eval_kwargs:
     num_ep: 20 # Number of enviornment episodes to run for evaluation
+    # num_gifs: 1
+    # width: 500
+    # height: 500
   loss_metric: reward # The validation metric that determines when to save the "best_checkpoint"
   train_dataloader_kwargs:
     batch_size: null
