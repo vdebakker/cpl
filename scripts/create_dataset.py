@@ -129,7 +129,6 @@ if __name__ == "__main__":
         # Note that we store the _last_ state.
         if hasattr(env, "get_state"):
             state = env.get_state()
-        metric_tracker.reset()
         replay_buffer.add(obs=obs)
         while not done:
             if use_random_actions:
@@ -140,7 +139,7 @@ if __name__ == "__main__":
             action = np.clip(action, env.action_space.low, env.action_space.high)
 
             obs, reward, done, info = env.step(action)
-            metric_tracker.step(reward, info)
+            metric_tracker.step(reward, info, done)
             ep_length += 1
 
             # Determine the discount factor.

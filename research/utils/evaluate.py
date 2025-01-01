@@ -7,6 +7,7 @@ import gym.vector
 import imageio
 import numpy as np
 import torch
+from typing import Iterable
 
 from . import utils
 
@@ -32,6 +33,11 @@ class EvalMetricTracker(object):
         self.ep_metrics = []
 
     def step(self, reward: list[float], info: list[dict], done: list[bool]) -> None:
+        if not isinstance(reward, Iterable):
+            reward = [reward]
+            info = [info]
+            done = [done]
+
         for i, rew in enumerate(reward):
             if i <= len(self.ep_length):
                 self.ep_length.append(0)
