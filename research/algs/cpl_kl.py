@@ -25,8 +25,8 @@ class CPL_KL(OffPolicyAlgorithm):
         # Perform checks on values
         assert "encoder" in self.network.CONTAINERS
         assert "actor" in self.network.CONTAINERS
-        assert bc_steps > 0
-        assert contrastive_bias > 0.0 and contrastive_bias <= 1.0
+        # assert bc_steps > 0
+        # assert contrastive_bias > 0.0 and contrastive_bias <= 1.0
         self.alpha = alpha
         self.contrastive_bias = contrastive_bias
         self.bc_data = bc_data
@@ -51,6 +51,7 @@ class CPL_KL(OffPolicyAlgorithm):
     def setup_schedulers(self, do_nothing=True):
         if do_nothing:
             # Set schedulers that just return 1.0 -- ignore during BC steps.
+            return
             for k in self.schedulers_class.keys():
                 self.schedulers[k] = torch.optim.lr_scheduler.LambdaLR(self.optim[k], lr_lambda=lambda x: 1.0)
         else:

@@ -5,7 +5,6 @@ from typing import Optional
 import gym
 import torch
 from torch import nn
-import numpy as np
 import math
 from diffusers.schedulers.scheduling_ddim import DDIMScheduler
 
@@ -28,35 +27,6 @@ class SinusoidalPosEmb(nn.Module):
         return emb
 
 
-def cosine_beta_schedule(timesteps, s=0.008, dtype=torch.float32):
-    """
-    cosine schedule
-    as proposed in https://openreview.net/forum?id=-NEXDKk8gZ
-    """
-    steps = timesteps + 1
-    x = np.linspace(0, steps, steps)
-    alphas_cumprod = np.cos(((x / steps) + s) / (1 + s) * np.pi * 0.5) ** 2
-    alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
-    betas = 1 - (alphas_cumprod[1:] / alphas_cumprod[:-1])
-    betas_clipped = np.clip(betas, a_min=0, a_max=0.999)
-    return torch.tensor(betas_clipped, dtype=dtype)
-
-
-def linear_beta_schedule(timesteps, beta_start=1e-4, beta_end=2e-2, dtype=torch.float32):
-    betas = np.linspace(beta_start, beta_end, timesteps)
-    return torch.tensor(betas, dtype=dtype)
-
-
-def vp_beta_schedule(timesteps, dtype=torch.float32):
-    t = np.arange(1, timesteps + 1)
-    T = timesteps
-    b_max = 10.0
-    b_min = 0.1
-    alpha = np.exp(-b_min / T - 0.5 * (b_max - b_min) * (2 * t - 1) / T**2)
-    betas = 1 - alpha
-    return torch.tensor(betas, dtype=dtype)
-
-
 class DiffusionMLPActor(nn.Module):
     def __init__(
         self,
@@ -64,6 +34,7 @@ class DiffusionMLPActor(nn.Module):
         action_space: gym.Space,
         ortho_init: bool = False,
         output_gain: Optional[float] = None,
+        chunk_sz: int= 16,
         time_dim: int = 32,
         diffusion_train_steps: int = 32,
         diffusion_eval_steps: int = 32,
@@ -75,6 +46,7 @@ class DiffusionMLPActor(nn.Module):
         super().__init__()
         assert isinstance(observation_space, gym.spaces.Box) and len(observation_space.shape) == 1
 
+        self.chunk_sz = chunk_sz
         self.observation_space = observation_space
         self.action_space = action_space
         self.temp_layers = nn.Sequential(
@@ -84,8 +56,9 @@ class DiffusionMLPActor(nn.Module):
             nn.Linear(time_dim * 2, time_dim),
         )
 
-        out_dim = action_space.shape[0]
-        in_dim = observation_space.shape[0] + time_dim + out_dim
+        self.act_dim = action_space.shape[0]
+        out_dim = self.act_dim * chunk_sz
+        in_dim = observation_space.shape[0] + time_dim + self.act_dim * chunk_sz
         self.mlp = MLP(in_dim, out_dim, **kwargs)
         self.ortho_init = ortho_init
         self.output_gain = output_gain
@@ -132,7 +105,7 @@ class DiffusionMLPActor(nn.Module):
 
     def sample(self, obs: torch.Tensor):
         device = obs.device
-        noisy_act = torch.randn(obs.shape[:-1] + self.action_space.shape[:1])
+        noisy_act = torch.randn(obs.shape[:-1] + (self.act_dim * self.chunk_sz,))
 
         self.diffusion_schedule.set_timesteps(self.diffusion_eval_steps)
         self.diffusion_schedule.alphas_cumprod = (
@@ -150,4 +123,4 @@ class DiffusionMLPActor(nn.Module):
             ).prev_sample
 
         # return final action post diffusion
-        return noisy_act
+        return noisy_act[..., :self.act_dim]

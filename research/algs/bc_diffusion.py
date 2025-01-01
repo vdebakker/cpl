@@ -3,7 +3,6 @@ from typing import Any, Dict, Optional
 
 import gym
 import torch
-import numpy as np
 from torch.nn import functional as F
 
 from research.utils import utils
@@ -49,12 +48,15 @@ class BehaviorCloningDiffusion(OffPolicyAlgorithm):
         self.optim["actor"] = self.optim_class(groups)
 
     def _get_bc_loss(self, obs: torch.Tensor, action: torch.Tensor):
-        while len(obs.shape) > 2:
-            obs = obs.reshape(-1, obs.size(2))
-            action = action.reshape(-1, action.size(2))
+        # while len(obs.shape) > 2:
+        #     obs = obs.reshape(-1, *obs.shape[2:])
+        #     action = action.reshape(-1, *action.shape[2:])
+        obs = obs[:, 0]
+        action = action.reshape(action.shape[0], -1)
 
         z = self.network.encoder(obs)
         t = self.network.actor.get_rand_timesteps(obs.shape[:-1])
+
         noise = torch.randn_like(action)
         noisy_action = self.network.actor.add_noise(action, noise, t)
 
