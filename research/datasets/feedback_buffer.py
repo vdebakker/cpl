@@ -131,7 +131,11 @@ class FeedbackBuffer(torch.utils.data.IterableDataset):
 
                 hard_label = 1.0 * (self.data[self.label_key][data_1_idxs] < self.data[self.label_key][data_2_idxs])
                 soft_label = 0.5 * (self.data[self.label_key][data_1_idxs] == self.data[self.label_key][data_2_idxs])
+                # soft_label = 1 / (1 + np.exp(0.01 * (self.data[self.label_key][data_1_idxs] - self.data[self.label_key][data_2_idxs])))
                 batch["label"] = (hard_label + soft_label).astype(np.float32)
+                # batch["label"] = soft_label.astype(np.float32)
+                batch["score_1"] = self.data[self.label_key][data_1_idxs]
+                batch["score_2"] = self.data[self.label_key][data_2_idxs]
                 batch["discount_1"] = self.discount * np.ones_like(batch["reward_1"], dtype=np.float32)
                 batch["discount_2"] = self.discount * np.ones_like(batch["reward_2"], dtype=np.float32)
 
